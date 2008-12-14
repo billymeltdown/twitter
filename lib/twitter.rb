@@ -18,7 +18,8 @@ module Twitter
   class RateExceeded < StandardError; end
   class CantFindUsers < ArgumentError; end
   class AlreadyFollowing < StandardError; end
-  class CantFollowUser < StandardError; end
+  class RequestRefused < ArgumentError; end
+  class YouAreNotFriends < StandardError; end
 
   SourceName = 'twittergem'
 end
