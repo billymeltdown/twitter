@@ -16,10 +16,10 @@ module Twitter
   class BadResponse < StandardError; end
   class UnknownTimeline < ArgumentError; end
   class RateExceeded < StandardError; end
-  class CantFindUsers < ArgumentError; end
-  class AlreadyFollowing < StandardError; end
   class RequestRefused < ArgumentError; end
-  class YouAreNotFriends < StandardError; end
+  class CantFindUsers < RequestRefused; end
+  class AlreadyFollowing < RequestRefused; end
+  class YouAreNotFriends < RequestRefused; end
 
   SourceName = 'twittergem'
 end

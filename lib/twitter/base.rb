@@ -232,9 +232,9 @@ module Twitter
           raise CantFindUsers, (doc/:hash/:error).text if (doc/:hash/:error).text =~ /Could not find both specified users/
           raise AlreadyFollowing, (doc/:hash/:error).text if (doc/:hash/:error).text =~ /already on your list/
           raise YouAreNotFriends, (doc/:hash/:error).text if (doc/:hash/:error).text =~ /You are not friends/
-          raise RequestRefused, "Response code #{response.code}: #{response.message}"
+          raise RequestRefused, "Response code #{response.code}: #{response.message} #{(doc/:hash/:error).text}"
         else
-          raise CantConnect, "Twitter is returning a #{response.code}: #{response.message}"
+          raise CantConnect, "Twitter is returning a #{response.code}: #{response.message} #{(doc/:hash/:error).text}"
         end
       end      
     
