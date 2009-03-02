@@ -16,7 +16,11 @@ describe "Twitter::Base" do
       lambda { @base.timeline(:fakeyoutey) }.should raise_error(Twitter::UnknownTimeline)
     end
     
-    it "should default to friends timeline"
+    it "should default to friends timeline" do
+      @base.should_receive(:call).with("friends_timeline", {:auth=>true, :args=>{}, :since=>nil})
+      @base.should_receive(:statuses)
+      @base.timeline
+    end
     
     it "should be able to retrieve friends timeline" do
       data = open(File.dirname(__FILE__) + '/fixtures/friends_timeline.xml').read
@@ -50,6 +54,12 @@ describe "Twitter::Base" do
       @base.friends(:lite => true).size.should == 15
     end
     
+    it "should be able to get friend ids" do
+      data = open(File.dirname(__FILE__) + '/fixtures/friend_ids.xml').read
+      @base.should_receive(:request).and_return(Hpricot::XML(data))
+      @base.friend_ids.size.should == 8
+    end
+    
     it "should be able to get friends for another user" do
       data = open(File.dirname(__FILE__) + '/fixtures/friends_for.xml').read
       @base.should_receive(:request).and_return(Hpricot::XML(data))
@@ -66,17 +76,25 @@ describe "Twitter::Base" do
       timeline.first.name.should == 'Blaine Cook'
     end
     
+    it "should be able to get follower ids" do
+      data = open(File.dirname(__FILE__) + '/fixtures/follower_ids.xml').read
+      @base.should_receive(:request).and_return(Hpricot::XML(data))
+      @base.follower_ids.size.should == 8
+    end
+    
     it "should be able to create a friendship" do
       data = open(File.dirname(__FILE__) + '/fixtures/friendship_created.xml').read
       @base.should_receive(:request).and_return(Hpricot::XML(data))
       user = @base.create_friendship('jnunemaker')
     end
     
-    it "should bomb if friendship already exists" #do
-    #  data = open(File.dirname(__FILE__) + '/fixtures/friendship_already_exists.xml').read
-    #  @base.should_receive(:request).and_return(Hpricot::XML(data))
-    #  lambda { @base.create_friendship('billymeltdown') }.should raise_error(Twitter::AlreadyFollowing)
-    #end
+    it "should bomb if friendship already exists" do
+      data = open(File.dirname(__FILE__) + '/fixtures/friendship_already_exists.xml').read
+      response = Net::HTTPForbidden.new("1.1", '403', '')
+      response.stub!(:body).and_return(data)
+      @base.should_receive(:response).and_return(response)
+      lambda { @base.create_friendship('billymeltdown') }.should raise_error(Twitter::AlreadyFollowing)
+    end
   end
   
   it "should be able to get single status" do

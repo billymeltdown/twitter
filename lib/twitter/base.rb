@@ -12,8 +12,10 @@ module Twitter
     # Identi.ca example:
     #   Twitter.new('email/username', 'password', :api_host => 'identi.ca/api')
     def initialize(email, password, options={})
-      @config, @config[:email], @config[:password] = {}, email, password
       @api_host = options.delete(:api_host) || 'twitter.com'
+      @config, @config[:email], @config[:password] = options, email, password
+      @proxy_host = options[:proxy_host]
+      @proxy_port = options[:proxy_port]
     end
     
     # Returns an array of statuses for a timeline; Defaults to your friends timeline.
@@ -33,6 +35,13 @@ module Twitter
       friends(options.merge({:id => id}))
     end
     
+    # Returns an array of user ids who are friends for the account or the option id/username passed in
+    def friend_ids(id_or_screenname = nil)
+      path = id_or_screenname ? "friends/ids/#{id_or_screenname}.xml" : "friends/ids.xml"
+      doc = request(path, :auth => true)
+      (doc/:id).inject([]) {|ids, id| ids << id.innerHTML; ids}
+    end
+    
     # Returns an array of users who are following you
     def followers(options={})
       users(call(:followers, {:args => parse_options(options)}))
@@ -40,6 +49,13 @@ module Twitter
     
     def followers_for(id, options={})
       followers(options.merge({:id => id}))
+    end
+    
+    # Returns an array of user ids who are followers for the account or the option id/username passed in
+    def follower_ids(id_or_screenname = nil)
+      path = id_or_screenname ? "followers/ids/#{id_or_screenname}.xml" : "followers/ids.xml"
+      doc = request(path, :auth => true)
+      (doc/:id).inject([]) {|ids, id| ids << id.innerHTML; ids}
     end
     
     # Returns a single status for a given id
@@ -159,6 +175,7 @@ module Twitter
     def post(status, options={})
       form_data = {'status' => status}
       form_data.merge!({'source' => options[:source]}) if options[:source]
+      form_data.merge!({'in_reply_to_status_id' => options[:in_reply_to_status_id]}) if options[:in_reply_to_status_id]
       Status.new_from_xml(request('statuses/update.xml', :auth => true, :method => :post, :form_data => form_data))
     end
     alias :update :post
@@ -166,7 +183,7 @@ module Twitter
     # Verifies the credentials for the auth user.
     #   raises Twitter::CantConnect on failure.
     def verify_credentials
-      request('account/verify_credentials', :auth => true)
+      request('account/verify_credentials.xml', :auth => true)
     end
     
     private      
@@ -184,28 +201,18 @@ module Twitter
       # 
       # ie: call(:public_timeline, :auth => false)
       def call(method, options={})
-        options.reverse_merge!({ :auth => true, :args => {} })
+        options = { :auth => true, :args => {} }.merge(options)
         # Following line needed as lite=false doesn't work in the API: http://tinyurl.com/yo3h5d
         options[:args].delete(:lite) unless options[:args][:lite]
         args = options.delete(:args)
         request(build_path("statuses/#{method.to_s}.xml", args), options)
       end
       
-      # Makes a request to twitter.
-      def request(path, options={})
-        options.reverse_merge!({
-          :headers => { "User-Agent" => @config[:email] },
-          :method => :get
-        })
-        unless options[:since].blank?
-          since = options[:since].kind_of?(Date) ? options[:since].strftime('%a, %d-%b-%y %T GMT') : options[:since].to_s  
-          options[:headers]["If-Modified-Since"] = since
-        end
-        
+      def response(path, options={})
         uri = URI.parse("http://#{@api_host}")
         
         begin
-          response = Net::HTTP::Proxy(options[:proxy_host], options[:proxy_port]).start(uri.host, uri.port) do |http|
+          response = Net::HTTP::Proxy(@proxy_host, @proxy_port).start(uri.host, uri.port) do |http|
             klass = Net::HTTP.const_get options[:method].to_s.downcase.capitalize
             req = klass.new("#{uri.path}/#{path}", options[:headers])
             req.basic_auth(@config[:email], @config[:password]) if options[:auth]
@@ -217,7 +224,24 @@ module Twitter
         rescue => error
           raise CantConnect, error.message
         end
+      end
+      
+      # Makes a request to twitter.
+      def request(path, options={})
+        options = {
+          :headers => { "User-Agent" => @config[:email] },
+          :method => :get,
+        }.merge(options)
         
+        unless options[:since].nil?
+          since = options[:since].kind_of?(Date) ? options[:since].strftime('%a, %d-%b-%y %T GMT') : options[:since].to_s  
+          options[:headers]["If-Modified-Since"] = since
+        end
+        
+        handle_response!(response(path, options))
+      end
+      
+      def handle_response!(response)
         if %w[200 304].include?(response.code)
           response = parse(response.body)
           raise RateExceeded if (response/:hash/:error).text =~ /Rate limit exceeded/
@@ -227,20 +251,23 @@ module Twitter
         elsif response.code == '401'
           raise CantConnect, 'Authentication failed. Check your username and password'
         elsif response.code == '403'
-          # get an Hpricot document
-          doc = parse(response.body)
-          raise CantFindUsers, (doc/:hash/:error).text if (doc/:hash/:error).text =~ /Could not find both specified users/
-          raise AlreadyFollowing, (doc/:hash/:error).text if (doc/:hash/:error).text =~ /already on your list/
-          raise YouAreNotFriends, (doc/:hash/:error).text if (doc/:hash/:error).text =~ /You are not friends/
-          raise RequestRefused, "Response code #{response.code}: #{response.message} #{(doc/:hash/:error).text}"
+          error_message = (parse(response.body)/:hash/:error).text
+          raise CantFindUsers, error_message  if error_message =~ /Could not find both specified users/
+          raise AlreadyFollowing, error_message if error_message =~ /already on your list/
+          raise YouAreNotFriends, error_message if error_message =~ /You are not friends/
+          raise RequestRefused, "Response code #{response.code}: #{response.message} #{error_message}"
         else
           raise CantConnect, "Twitter is returning a #{response.code}: #{response.message} #{(doc/:hash/:error).text}"
         end
-      end      
+      end
     
       # Given a path and a hash, build a full path with the hash turned into a query string
       def build_path(path, options)
-        path += "?#{options.to_query}" unless options.blank?
+        unless options.nil?
+          query = options.inject('') { |str, h| str += "#{CGI.escape(h[0].to_s)}=#{CGI.escape(h[1].to_s)}&"; str }
+          path += "?#{query}"
+        end
+        
         path
       end
 

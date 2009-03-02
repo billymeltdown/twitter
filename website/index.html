@@ -87,7 +87,10 @@ Twitter::Search.new.from('jnunemaker').to('oaknd1').fetch()
 		
 		<p><img src="images/terminal_output.png" alt="Terminal Output" style="width:560px;" /></p>
 		
-		<p><strong>Note: If you want to use twitter from the command line be sure that sqlite3 and the sqlite3-ruby gem are installed.</strong> I removed the sqlite3-ruby gem as a dependency because you shouldn't need that to just use the API wrapper. Eventually I'll move the CLI interface into another gem.</p>
+		<p>I removed the command line dependencies from the gem dependencies list so if you want to use the command line part of the twitter gem be sure to install the following gems as well.</p>
+		
+		<pre><code>$ sudo gem install main highline sqlite3-ruby
+$ sudo gem install activerecord -v 2.2.2</code></pre>
 		
 	<p>The first thing you'll want to do is install the database so your account(s) can be stored.</p> 
 
@@ -127,18 +130,6 @@ Account List
 		
 		<h2>Support</h2> 
 		<p>Conversations welcome in the <a href="http://groups.google.com/group/ruby-twitter-gem">google group</a> and bugs/features over at <a href="http://jnunemaker.lighthouseapp.com/projects/14843-twitter-gem/overview">lighthouse</a></p>
-		
-		<h2>Uses</h2> 
-		<ul> 
-			<li><a href="http://snitch.rubyforge.org">Snitch</a></li> 
-			<li><a href="http://al3x.net/entries/766">Growl + Twitter</a></li> 
-			<li><a href="http://snippets.dzone.com/posts/show/3714">Twitter Woot Bot</a> (<a href="http://soylentfoo.jnewland.com/articles/2007/03/22/woot-twitter-bot-now-official">more here</a>)</li> 
-			<li><a href="http://soylentfoo.jnewland.com/articles/2007/01/22/tweet-update-twitter-via-quicksilver">Tweet Quicksilver Action</a></li> 
-			<li><a href="http://blog.evanweaver.com/articles/2007/02/09/log-system-security-events-to-twitter">logging security events to twitter</a></li> 
-			<li><a href="http://shareomatic.com/">Shareomatic</a> is using it for their <a href="http://twitter.com/shareomatic">twitter account</a></li> 
-		</ul> 
-		
-		<p>Using the twitter gem for something, <a href="mailto:nunemaker@gmail.com">let me know</a> and I'll add you above.</p> 
 	</div> 
  
 	<div id="footer"> 

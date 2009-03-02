@@ -10,6 +10,5 @@ if ARGV[0] && ARGV[0] == 'd' && !STDIN.tty?
   ARGV[2] = "#{STDIN.read}#{ARGV[2]}"
 end
 
-$:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
-require 'twitter'
+require File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib', 'twitter'))
 require 'twitter/cli'

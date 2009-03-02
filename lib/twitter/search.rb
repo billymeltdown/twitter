@@ -11,7 +11,7 @@ module Twitter
     
     def initialize(q=nil)
       clear
-      containing(q) unless q.blank?
+      containing(q) if q && q.strip != ''
     end
     
     def from(user)
@@ -59,6 +59,12 @@ module Twitter
       self
     end
     
+    # Which page of results to fetch
+    def page(num)
+      @query[:page] = num
+      self
+    end
+    
     # Only searches tweets since a given id. 
     # Recommended to use this when possible.
     def since(since_id)
@@ -83,7 +89,7 @@ module Twitter
     # If you want to get results do something other than iterate over them.
     def fetch
       @query[:q] = @query[:q].join(' ')
-      self.class.get('/search.json', {:query => @query})
+      SearchResultInfo.new_from_hash(self.class.get('/search.json', {:query => @query}))
     end
     
     def each
@@ -92,3 +98,4 @@ module Twitter
     end
   end
 end
+

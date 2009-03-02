@@ -1,8 +1,10 @@
 require 'rubygems'
+
 gem 'main', '>= 2.8.2'
 gem 'highline', '>= 1.4.0'
-gem 'activerecord', '>= 2.1'
+gem 'activerecord', '= 2.2.2'
 gem 'sqlite3-ruby', '>= 1.2.1'
+
 require 'main'
 require 'highline/import'
 require 'activerecord'
@@ -177,7 +179,7 @@ Main {
         end
         post_thread.join
         progress_thread.join
-        say "Got it! New twitter created at: #{status.created_at}\n"
+        say "Got it! New tweet created at: #{status.created_at}\n"
       end
     end
   end
@@ -215,7 +217,7 @@ Main {
   end
   
   mode 'follow' do
-    description "Allows you to turn on notifications for a user"
+    description "Allows you to add notifications for a user (aka Follow Them)"
     argument('username') {
       required
       description 'username or id of twitterrer to follow'
@@ -275,21 +277,25 @@ Main {
     option('force', 'f') {
       description "Ignore since_id and show first page of results even if there aren't new ones"
     }
+    option('reverse', 'r') {
+      description 'Reverse the output so the oldest tweets are at the top'
+    }
     
     def run
       do_work do
         timeline = params['timeline'].value == 'me' ? 'user' : params['timeline'].value
         options, since_id = {}, Configuration["#{timeline}_since_id"]
-        options[:since_id] = since_id if !since_id.blank? && !params['force'].given?
+        options[:since_id] = since_id if !since_id.nil? && !params['force'].given?
+        reverse = params['reverse'].given? ? true : false
         cache = [:friends, :user].include?(timeline)
         collection = base.timeline(timeline.to_sym, options)
-        output_tweets(collection, {:cache => cache, :since_prefix => timeline})
+        output_tweets(collection, {:cache => cache, :since_prefix => timeline, :reverse => reverse})
       end
     end
   end
   
   mode 'replies' do
-    description 'Allows you to view all @replies at you'
+    description 'Allows you to view all @replies sent to you'
     option('force', 'f') {
       description "Ignore since_id and show first page of replies even if there aren't new ones"
     }
@@ -297,7 +303,7 @@ Main {
     def run
       do_work do
         options, since_id = {}, Configuration["replies_since_id"]
-        options[:since_id] = since_id if !since_id.blank? && !params['force'].given?
+        options[:since_id] = since_id if !since_id.nil? && !params['force'].given?
         collection = base.replies(options)
         output_tweets(collection, {:since_prefix => 'replies'})
       end
