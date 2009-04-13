@@ -1,3 +1,14 @@
+= Fork Info:
+
+I forked this off of jnunemaker's twitter gem. This was forked before version 0.5. I plan to keep it at version 0.4.2's codebase because:
+
+* Not ready to switch over to OAuth yet in my own apps, since Twitter has no date set yet
+* My apps (http://keeptempo.com, http://gopingme.com) require the exception handling i've added here.
+
+You can read more about what this fork offers on the wiki:
+
+http://wiki.github.com/billymeltdown/twitter
+
 = addicted to twitter
 
 ... a sweet little diddy that helps you twitter your life away
