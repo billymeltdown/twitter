@@ -257,7 +257,7 @@ module Twitter
           raise YouAreNotFriends, error_message if error_message =~ /You are not friends/
           raise RequestRefused, "Response code #{response.code}: #{response.message} #{error_message}"
         else
-          raise CantConnect, "Twitter is returning a #{response.code}: #{response.message} #{(doc/:hash/:error).text}"
+          raise CantConnect, "Twitter is returning a #{response.code}: #{response.message} #{(parse(response.body)/:hash/:error).text}"
         end
       end
     
